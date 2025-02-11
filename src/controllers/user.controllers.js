@@ -15,33 +15,33 @@ const generateAccessAndRefreshToken=async(userId)=>{
     return {accessToken,refreshToken}
 }
 
-const registerUser=asyncHandler(async (req,res)=>{
+const registerUser=asyncHandler(async (req,res,next)=>{
     const {username,email,phno,fullName,password}=req.body
 
     if(!username){
-        throw new apiError(401,"username is required")
+        return next(apiError.badRequest(400,"username is required"))
     }
     else if(!email){
-        throw new apiError(401,"email is required")
+        return next(apiError.badRequest(400,"email is required"))
     }
     else if(!phno){
-        throw new apiError(401,"phone number is required")
+        return next(apiError.badRequest(400,"phone number is required"))
     }
     else if(!password){
-        throw new apiError(401,"password is required")
+        return next(apiError.badRequest(400,"password is required"))
     }
 
     const existedUser=await User.findOne({username})
 
     if(existedUser){
-        throw new apiError(401,"this username is already exsist")
+        return next(apiError.badRequest(400,"user is already exists"))
     }
 
     const profileLocalPath=req.file?.path;
 
-    console.log(req.files)
+    //console.log(req.files)
     if(!profileLocalPath){
-        throw new apiError(401,"profile is required")
+        return next(apiError.badRequest(400,"profile is required"))
     }
 
     const profile=await uploadOnCloudinary(profileLocalPath)
@@ -58,7 +58,7 @@ const registerUser=asyncHandler(async (req,res)=>{
     const createdUser=await User.findById(user._id).select("-password -refreshToken")
 
     if(!createdUser){
-        throw new apiError(401,"something went wrong while registering!!")
+        return next(apiError.badRequest(400,"something went wrong while registering"))
     }
 
     return res.status(200)
@@ -66,23 +66,23 @@ const registerUser=asyncHandler(async (req,res)=>{
 
 })
 
-const loginUser=asyncHandler(async(req,res)=>{
+const loginUser=asyncHandler(async(req,res,next)=>{
     const {username,password}=req.body
 
     if(!username){
-        throw new apiError(401,"username is required...!")
+        return next(apiError.badRequest(400,"username is required"))
     }
 
     const user=await User.findOne({username})
 
     if(!user){
-        throw new apiError(401,"username is wrong!!")
+        return next(apiError.notFound(404,"username not found"))
     }
 
     const isPasswordValid=await user.isCorrectPassword(password)
 
     if(!isPasswordValid){
-        throw new apiError(401,"password is invalid!!")
+        return next(apiError.unAuthorized(401,"wrong password.!!"))
     }
 
     const {accessToken,refreshToken}=await generateAccessAndRefreshToken(user._id)
@@ -104,8 +104,6 @@ const loginUser=asyncHandler(async(req,res)=>{
         "login success..."
         )
     )
-
-
 
 })
 
